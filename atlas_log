@@ -1,2 +1,143 @@
-# SOS
-个人代码库
+# coding=utf-8
+import os
+import re
+import smtplib
+import time
+import datetime
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.application import MIMEApplication
+# import itchat
+import logging
+import logging.handlers
+from logging.handlers import RotatingFileHandler
+from itertools import islice
+
+
+class atlas_Log(object):
+    def __init__(self):
+        self.subject = "Python 程序出现异常"
+        # 发送者
+        self.fromaddr = "Atlas 综合项目部"
+        self.mail_host = "smtp.163.com"
+        self.formatter = logging.Formatter('%(asctime)s %(filename)s[line:%(lineno)d] 进程ID: %(process)s %(message)s',
+                                           '%Y-%m-%d %H:%M:%S')  # 格式化输出
+        self.to_list = ["87262420@qq.com"]
+
+    def send_mail(self,info, logfile_path):  # to_list：收件人；sub：主题；content：邮件内容
+        mail_host = "smtp.163.com"  # 设置服务器
+        mail_user = "sosmyhearts"  # 用户名
+        mail_pass = "sos87262420"  # 口令
+        mail_postfix = "163.com"  # 发件箱的后缀
+
+        me = self.fromaddr + "<" + mail_user + "@" + mail_postfix + ">"  # 可以任意设置,收到信后，将按照设置显示
+        msg = MIMEMultipart()  # 实例化对象
+        # msg = MIMEText(content)
+        msg['Subject'] = self.subject
+        msg['From'] = me
+        msg['To'] = ";".join(self.to_list)
+
+        # ---邮件正文---
+        part = MIMEText(str(info), 'text',_charset='gb2312')  # 将错误文件内容做为邮件正文内容
+        msg.attach(part)
+        # txt类型附件
+        # part = MIMEApplication(open(logfile_path, 'rb').read())
+        part.add_header('Content-Disposition', 'attachment', filename="error_log.txt")
+        msg.attach(part)
+
+        try:
+            s = smtplib.SMTP()
+            s.connect(mail_host)  # 连接smtp服务器
+            s.login(mail_user, mail_pass)  # 登陆服务器
+            s.sendmail(me, self.to_list, msg.as_string())  # 发送邮件
+            s.close()
+            print "发送邮件成功~!"
+            return True
+        except Exception as e:
+            print "发送邮件失败~",e
+            return False
+
+
+    def file_logInfo(self, info, *args):
+        '''根据不同信息(正常,异常的)指定不同级别 触发邮件'''
+        path = os.getcwd()
+        print path
+        file_path = path + '/log/'
+        if os.path.exists(file_path) is False:
+            os.makedirs(file_path)
+
+        objectdir = file_path + "log.txt"
+        logfile_path = file_path + "atlas.log"
+
+        logger = logging.getLogger('sos')
+        file_h = RotatingFileHandler(logfile_path, maxBytes=10 * 1024 * 1024, backupCount=10)
+        logger.setLevel(logging.DEBUG)
+        file_h.setFormatter(self.formatter)
+        logger.addHandler(file_h)
+
+        if info:
+            print 333, info
+            logger.debug("debug 异常信息:{}".format(info))
+
+        if args:
+            if args[0] == 1:
+                logger.debug('debug级别 message==>{}')
+                logger.info('info级别 message==>{}'.format(args[0]))
+                logger.warning('warning级别 message==>{}'.format(args[0]))
+
+        self.count_keyword(info, logfile_path, objectdir)  # 调这个方法去检测文件里包含的关键字信息
+
+    def count_keyword(self,info, logfile_path, objectdir):
+        # 统计文件里包含的关键字
+        f = open(logfile_path, 'r')
+        file_Info = open(objectdir, 'a')
+        try:
+            num = 0
+            b = 0
+            for line in islice(f, b, None):
+                if "debug" in line:
+                    # 日志信息一进来的时候就统计数量，出现这个错误级别就发邮件
+                    num += 1
+                # 行号
+                b += 1
+                print "现在是第%s行" % b
+                # 保存这个数量
+            file_Info.write("日志行号:{}   错误级别数量:{}\n".format(b, num))
+        finally:
+            f.close()
+            file_Info.close()
+
+        # 如果下次有进来一条数据,不等于的话就代表有增加数量
+        f2 = open(objectdir, 'r')
+        info_list = f2.readlines()
+
+        if len(info_list) > 1:
+            s1 = info_list[len(info_list)-2]
+            last_num = re.search(r'\d+', s1, re.S).group()
+            s2 = info_list[len(info_list) - 1]
+            now_num = re.search(r'\d+', s2, re.S).group()
+            print int(now_num), int(last_num)
+            if int(now_num) > int(last_num):
+                print "出现新的第:%s错误信息,致命错误出现一次,请求发邮件!!!" % last_num
+                self.send_mail(info,logfile_path)
+
+            else:
+                print "没有出现新增的错误级别信息~!"
+
+        else:
+            if num > 0:
+                print "头一次写入信息时~包含错误关键字,发邮件报警!"
+                self.send_mail(info,logfile_path)
+            else:
+                print "没有出现信息~!"
+
+
+        return
+
+if __name__ == '__main__':
+    al = atlas_Log()
+    # 测试
+    try:
+        a = 1 / 0
+    except Exception as e:
+        al.file_logInfo(e)
