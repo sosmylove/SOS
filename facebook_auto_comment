@@ -11,6 +11,8 @@ from selenium import webdriver
 from selenium.webdriver.support.wait import WebDriverWait
 # from atlas_log import atlas_Log
 
+# 为公司事业部做的FB广告自动化评论脚本
+
 class fb_Spider(object):
     def __init__(self):
         # self.al = atlas_Log()
