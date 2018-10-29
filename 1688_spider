@@ -133,8 +133,7 @@ class alibaba_spider(object):
             for id_keyword in sql:
                 self.s.get(json_url,verify=False)
                 timestamp = int(time.time() * 1000)
-                first_string = self.s.cookies.get_dict()['_m_h5_tk'].split('_')[0]
-                print "字符串__:", first_string
+    
                 try:
                     index = 0
                     flag = True
