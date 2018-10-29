@@ -1,0 +1,77 @@
+from sklearn.neighbors import KNeighborsClassifier
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split, GridSearchCV # 分割数据集的方法 交叉验证
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.preprocessing import StandardScaler
+
+def knn():
+    """
+    对酒店入住位置进行预测  由于数据集太大未上传。
+    """
+    # 第一步获取数据集
+    all_data = pd.read_csv("./train.csv")
+
+    # 缩小数据x,y的坐标的范围
+    data = all_data.query("x>1.0 & x<1.25 &y>2.5&y<2.75")
+    # 时间特征处理方式
+    time_value = pd.to_datetime(data['time'], unit='s') # 以妙为单位
+    # 转换成时间的字典格式  把它转换成年月日的格式
+    new_time_value = pd.DatetimeIndex(time_value)
+
+    # 新构造的时间特征
+    data['weekday'] = new_time_value.weekday
+    data['hour'] = new_time_value.hour
+    data['day'] = new_time_value.day
+
+    # 原来数据里的time字段的数据就删掉，因为数据格式是时间戳，替用新构造的时间特征作为数据
+    new_data = data.drop(['time'], axis=1) # 按列删除!
+    # print(444,new_data)
+
+    # 对入住位置place_id 做筛选，入住客人少于n人就不过滤掉，不入住这个地址
+    place_count = new_data.groupby('place_id').aggregate(np.count_nonzero)
+    # 保留入住人数大于3的所有数据
+    hotel_place = place_count[place_count.row_id > 3].reset_index()
+
+    data = new_data[new_data['place_id'].isin(hotel_place.place_id)]
+
+    # 构造特征值(place_id)和目标值
+    y = data['place_id']
+    x = data.drop(['place_id'], axis=1) # 特征值就是除了目标值以外的其他值 按照列删除
+
+    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.25)
+    print(88888,type(y_test))
+    # 分割数据集后做标准化 提高预测准确度
+    std = StandardScaler()
+
+    x_train = std.fit_transform(x_train)
+    x_test = std.transform(x_test)
+
+
+    # 进入K-近邻算法流程
+    knn = KNeighborsClassifier()
+    # knn.fit(x_train,y_train) 
+
+    # 预测测试集的入住位置,得出准确率
+    # y_predict = knn.predict(x_test) 
+    # print("预测准确位置:",y_predict)
+
+    # 预测值跟目标值做比较
+    # score = knn.score(x_test, y_test)
+    # print("准确率是:",score) # 0.030023640661938536  做了标准化之后的 ： 0.4122931442080378 提高了10倍
+
+    # 交叉验证和网格搜索
+    param = {"n_neighbors":[1, 3, 5]}
+    # 参数 预估器 K值的范围选择 交叉验证次数
+    gd = GridSearchCV(knn, param_grid=param, cv=10)
+    gd.fit(x_train, y_train) 
+    score = gd.score(x_test, y_test) 
+    
+    print('测试集的准确率:',score)
+    print("在交叉验证中最好的结果:",gd.best_score_)
+    print("选择的最好的K值最好模型:",gd.best_estimator_)
+    print("在2折交叉验证中最好的结果:",gd.cv_results_)
+
+
+if __name__ == '__main__':
+    knn()
