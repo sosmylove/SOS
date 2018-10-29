@@ -1,0 +1,73 @@
+# coding=utf-8
+import pymysql
+import traceback
+import sys
+sys.path.append('..')
+from config.settings import *
+
+
+class alibaba_Sql(object):
+    def __init__(self):
+        self.conn = pymysql.Connect(
+            host=DB_HOST,
+            port=DB_PORT,
+            user=DB_USER,
+            password=DB_PASSWD,
+            db='d_alibaba',
+            charset='utf8'
+        )
+
+    # 插入数据 一级
+    def insert_category(self,product_name, parent_link, parent_id, category_lev,created_time):
+        cur = self.conn.cursor()
+        cur.execute("INSERT INTO website_category_copy(category_name, category_url, parent_id, category_lev, created_time) VALUE "
+                    "(%s,%s,%s,%s,%s)",(product_name, parent_link, parent_id, category_lev, created_time))
+        self.conn.commit()
+        return cur.lastrowid
+
+    # 查询出一级 url
+    def get_categoryName(self):
+        cur2 = self.conn.cursor()
+        cur2.execute("SELECT category_name FROM website_category_copy")
+        self.conn.commit()
+        return cur2.fetchall()
+
+    def getId(self):
+        cur3 = self.conn.cursor()
+        cur3.execute("SELECT id FROM `website_category_copy` ORDER BY `id` DESC LIMIT 1")
+        self.conn.commit()
+        return cur3.fetchall()
+
+
+    # 查询出二级 url
+    def get_categoryName2(self):
+        cur4 = self.conn.cursor()
+        cur4.execute("SELECT id,category_name FROM website_category where category_lev=3")
+        self.conn.commit()
+        return cur4.fetchall()
+
+
+    # 数据
+    def product_Data_1688(self, product_name, keyword, atlas_price, price_list, originalPrice, detail_link, pid, index, website_id, star_level, sortId, saleCount, image_list, category_id, ratecount, created_time):
+        cur5 = self.conn.cursor()
+        try:
+            cur5.execute("INSERT INTO website_product_copy(product_name, parent_name, atlas_price, sale_price, original_price, product_url, goods_sn, sort_num, website_id, rating, sort_type, sale_num, product_image, category_id, comment_count, created_time) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                (product_name, keyword, atlas_price, price_list, originalPrice, detail_link, pid, index, website_id, star_level, sortId, saleCount, image_list, category_id, ratecount, created_time))
+
+            self.conn.commit()
+        except Exception as e:
+            print(e)
+            traceback.print_exc()
+
+
+
+
+
+
+
+
+
+
+
+
+
