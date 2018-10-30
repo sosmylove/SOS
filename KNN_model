@@ -70,7 +70,7 @@ def knn():
     print('测试集的准确率:',score)
     print("在交叉验证中最好的结果:",gd.best_score_)
     print("选择的最好的K值最好模型:",gd.best_estimator_)
-    print("在2折交叉验证中最好的结果:",gd.cv_results_)
+    print("在10折交叉验证中最好的结果:",gd.cv_results_)
 
 
 if __name__ == '__main__':
