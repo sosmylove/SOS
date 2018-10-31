@@ -142,10 +142,8 @@ class alibaba_spider(object):
                             break
                         data = '{{"sortType":"{}","keywords":"{}","descendOrder":"true","appName":"wap","beginPage":{},"pageSize":20}}'.format(sort, id_keyword[1], num)
                         string = "{}&{}&12574478&{}".format(first_string, timestamp, data)
-                        sign = md5(string.encode('utf-8')).hexdigest()
                         product_link = 'https://h5api.m.1688.com/h5/mtop.1688.offerservice.getoffers/1.0/?appKey=12574478&t={}&sign={}&data={}'.format(timestamp, sign, data)
                         self.cookies = self.s.cookies.get_dict()
-
                         res = self.construct_requests(product_link)
                         product_id_list = self.product_id(res)
 
