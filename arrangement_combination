@@ -1,0 +1,16 @@
+# coding=utf-8
+def per(astr):
+    """排列组合算法"""
+    n=len(astr)
+    if n == 1:
+        return astr
+    alist=[]
+    for i in range(n):
+        newStr = per(astr[:i]+astr[i+1:])
+        for j in newStr:
+            alist.append(astr[i:i+1]+j)
+     return alist
+
+if __name__=='__main__':
+     print(per('abcd'))
+        
